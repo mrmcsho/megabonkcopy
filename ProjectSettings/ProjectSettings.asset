@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 27
+  productGUID: 68d965f6f5934e649984def894c268e3
+  defaultScreenWidth: 1920
+  defaultScreenHeight: 1080
+  defaultScreenWidthWeb: 960
+  defaultScreenHeightWeb: 600
+  m_ActiveColorSpace: 1
+  companyName: mrmcsho
+  productName: Megabonk Copy - Movement Prototype
+  applicationIdentifier:
+    Standalone: com.mrmcsho.megabonkcopy
+  usePlayerLog: 1
+  resizableWindow: 1
+  runInBackground: 1
+  activeInputHandler: 0
+
