@@ -76,6 +76,24 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Jump")
     float GravityScale = 2.25f;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0"))
+    float WallJumpUpSpeed = 760.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0"))
+    float WallJumpOutSpeed = 900.0f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0", ClampMax="1"))
+    float WallMomentumRetention = 0.75f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0"))
+    float WallGraceTime = 0.12f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0"))
+    float SameWallLockout = 0.20f;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Wall Kick", meta=(ClampMin="0"))
+    float WallCheckExtraDistance = 28.0f;
+
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Ground")
     FRotator MovementRotationRate = FRotator(0.0f, 900.0f, 0.0f);
 
@@ -125,6 +143,11 @@ private:
     void LookPitch(const FInputActionValue& Value);
     void StartSprint();
     void StopSprint();
+    void HandleJumpStarted();
+    void HandleJumpCompleted();
+    void UpdateWallContact();
+    bool FindNearbyWall(FHitResult& OutHit) const;
+    bool TryWallKick();
     void ConfigureInputMapping();
 
     UPROPERTY(Transient) TObjectPtr<UInputMappingContext> InputContext;
@@ -136,4 +159,8 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInputAction> JumpAction;
 
     bool bSprinting = false;
+    FVector LastWallNormal = FVector::ZeroVector;
+    FVector LastWallJumpNormal = FVector::ZeroVector;
+    float LastWallContactTime = -1000.0f;
+    float LastWallJumpTime = -1000.0f;
 };
