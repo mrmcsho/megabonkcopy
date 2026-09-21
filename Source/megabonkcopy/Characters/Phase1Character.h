@@ -9,6 +9,7 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class USpringArmComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class MEGABONKCOPY_API APhase1Character : public ACharacter
@@ -28,6 +29,22 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
     TObjectPtr<UCameraComponent> FollowCamera;
+
+    // Temporary visible body used only for Phase 1 movement-feel testing.
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Debug Visual")
+    TObjectPtr<UStaticMeshComponent> DebugTorso;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Debug Visual")
+    TObjectPtr<UStaticMeshComponent> DebugHead;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Debug Visual")
+    TObjectPtr<UStaticMeshComponent> DebugLeftLeg;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Debug Visual")
+    TObjectPtr<UStaticMeshComponent> DebugRightLeg;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Debug Visual")
+    TObjectPtr<UStaticMeshComponent> DebugForwardMarker;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Movement|Speed", meta=(ClampMin="0"))
     float WalkSpeed = 650.0f;
