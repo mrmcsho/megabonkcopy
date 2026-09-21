@@ -1,16 +1,18 @@
 #include "Characters/Phase1Character.h"
 
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Components/StaticMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
-#include "InputCoreTypes.h"
+#include "UObject/ConstructorHelpers.h"
 
 APhase1Character::APhase1Character()
 {
@@ -29,6 +31,49 @@ APhase1Character::APhase1Character()
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+
+    // Cheap temporary body made entirely from built-in Engine primitives.
+    // It has no collision and exists only so movement, facing and landing feel can be judged visually.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+
+    auto ConfigureDebugMesh = [this](UStaticMeshComponent* Component)
+    {
+        Component->SetupAttachment(RootComponent);
+        Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Component->SetGenerateOverlapEvents(false);
+        Component->SetCanEverAffectNavigation(false);
+    };
+
+    DebugTorso = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugTorso"));
+    ConfigureDebugMesh(DebugTorso);
+    DebugTorso->SetStaticMesh(CubeMesh.Object);
+    DebugTorso->SetRelativeLocation(FVector(0.0f, 0.0f, 5.0f));
+    DebugTorso->SetRelativeScale3D(FVector(0.42f, 0.30f, 0.72f));
+
+    DebugHead = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugHead"));
+    ConfigureDebugMesh(DebugHead);
+    DebugHead->SetStaticMesh(SphereMesh.Object);
+    DebugHead->SetRelativeLocation(FVector(0.0f, 0.0f, 62.0f));
+    DebugHead->SetRelativeScale3D(FVector(0.32f));
+
+    DebugLeftLeg = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugLeftLeg"));
+    ConfigureDebugMesh(DebugLeftLeg);
+    DebugLeftLeg->SetStaticMesh(CubeMesh.Object);
+    DebugLeftLeg->SetRelativeLocation(FVector(2.0f, -15.0f, -57.0f));
+    DebugLeftLeg->SetRelativeScale3D(FVector(0.22f, 0.18f, 0.42f));
+
+    DebugRightLeg = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugRightLeg"));
+    ConfigureDebugMesh(DebugRightLeg);
+    DebugRightLeg->SetStaticMesh(CubeMesh.Object);
+    DebugRightLeg->SetRelativeLocation(FVector(2.0f, 15.0f, -57.0f));
+    DebugRightLeg->SetRelativeScale3D(FVector(0.22f, 0.18f, 0.42f));
+
+    DebugForwardMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugForwardMarker"));
+    ConfigureDebugMesh(DebugForwardMarker);
+    DebugForwardMarker->SetStaticMesh(CubeMesh.Object);
+    DebugForwardMarker->SetRelativeLocation(FVector(38.0f, 0.0f, 18.0f));
+    DebugForwardMarker->SetRelativeScale3D(FVector(0.34f, 0.055f, 0.055f));
 
     UCharacterMovementComponent* Movement = GetCharacterMovement();
     Movement->bOrientRotationToMovement = true;
