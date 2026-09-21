@@ -1,6 +1,7 @@
 #include "Core/PrototypeGameMode.h"
 
 #include "Characters/Phase1Character.h"
+#include "Core/MovementTuningHUD.h"
 #include "Core/PrototypeArena.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
@@ -8,6 +9,7 @@
 APrototypeGameMode::APrototypeGameMode()
 {
     DefaultPawnClass = APhase1Character::StaticClass();
+    HUDClass = AMovementTuningHUD::StaticClass();
 }
 
 void APrototypeGameMode::BeginPlay()

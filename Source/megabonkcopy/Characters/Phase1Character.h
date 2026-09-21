@@ -21,6 +21,12 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
+    bool IsMovementTuningVisible() const { return bMovementTuningVisible; }
+    int32 GetMovementTuningSelection() const { return MovementTuningSelection; }
+    int32 GetMovementTuningCount() const;
+    FString GetMovementTuningName(int32 Index) const;
+    float GetMovementTuningValue(int32 Index) const;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -150,6 +156,19 @@ private:
     bool TryWallKick();
     void ConfigureInputMapping();
 
+    void ToggleMovementTuning();
+    void SelectPreviousMovementTuning();
+    void SelectNextMovementTuning();
+    void DecreaseMovementTuningFine();
+    void IncreaseMovementTuningFine();
+    void DecreaseMovementTuningCoarse();
+    void IncreaseMovementTuningCoarse();
+    void ResetSelectedMovementTuning();
+    void ResetAllMovementTuning();
+    void AdjustMovementTuning(float Direction, bool bCoarse);
+    void SetMovementTuningValue(int32 Index, float Value);
+    void ApplyMovementTuning();
+
     UPROPERTY(Transient) TObjectPtr<UInputMappingContext> InputContext;
     UPROPERTY(Transient) TObjectPtr<UInputAction> MoveForwardAction;
     UPROPERTY(Transient) TObjectPtr<UInputAction> MoveRightAction;
@@ -158,7 +177,20 @@ private:
     UPROPERTY(Transient) TObjectPtr<UInputAction> SprintAction;
     UPROPERTY(Transient) TObjectPtr<UInputAction> JumpAction;
 
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningToggleAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningPreviousAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningNextAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningDecreaseFineAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningIncreaseFineAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningDecreaseCoarseAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningIncreaseCoarseAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningResetSelectedAction;
+    UPROPERTY(Transient) TObjectPtr<UInputAction> TuningResetAllAction;
+
     bool bSprinting = false;
+    bool bMovementTuningVisible = false;
+    int32 MovementTuningSelection = 0;
+
     FVector LastWallNormal = FVector::ZeroVector;
     FVector LastWallJumpNormal = FVector::ZeroVector;
     float LastWallContactTime = -1000.0f;
