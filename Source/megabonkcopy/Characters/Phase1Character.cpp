@@ -18,37 +18,27 @@
 
 namespace
 {
-    struct FMovementTuningSpec
-    {
-        const TCHAR* Name;
-        float Minimum;
-        float Maximum;
-        float FineStep;
-        float CoarseStep;
-        float DefaultValue;
-    };
-
+    struct FMovementTuningSpec { const TCHAR* Name; float Minimum, Maximum, FineStep, CoarseStep, DefaultValue; };
     const FMovementTuningSpec GTuningSpecs[] =
     {
-        { TEXT("Walk Speed"),              100.0f, 3000.0f, 25.0f, 100.0f, 650.0f },
-        { TEXT("Sprint Speed"),            100.0f, 4000.0f, 25.0f, 100.0f, 1050.0f },
-        { TEXT("Acceleration"),            100.0f, 12000.0f, 100.0f, 500.0f, 4200.0f },
-        { TEXT("Ground Braking"),            0.0f, 12000.0f, 100.0f, 500.0f, 3600.0f },
-        { TEXT("Ground Friction"),            0.0f, 30.0f, 0.25f, 1.0f, 9.0f },
-        { TEXT("Air Control"),                0.0f, 1.0f, 0.02f, 0.10f, 0.42f },
-        { TEXT("Air Control Boost"),          0.0f, 5.0f, 0.05f, 0.25f, 1.60f },
-        { TEXT("Falling Lateral Friction"),   0.0f, 5.0f, 0.05f, 0.25f, 0.15f },
-        { TEXT("Jump Velocity"),            100.0f, 2000.0f, 25.0f, 100.0f, 720.0f },
-        { TEXT("Gravity Scale"),              0.1f, 8.0f, 0.05f, 0.25f, 2.25f },
-        { TEXT("Wall Kick Up"),             100.0f, 2000.0f, 25.0f, 100.0f, 760.0f },
-        { TEXT("Wall Kick Out"),            100.0f, 2500.0f, 25.0f, 100.0f, 900.0f },
-        { TEXT("Wall Momentum Retention"),    0.0f, 1.0f, 0.025f, 0.10f, 0.75f },
-        { TEXT("Wall Grace Time"),            0.0f, 0.5f, 0.01f, 0.05f, 0.12f },
-        { TEXT("Same Wall Lockout"),          0.0f, 1.0f, 0.01f, 0.05f, 0.20f },
-        { TEXT("Wall Check Extra Distance"),  0.0f, 150.0f, 2.0f, 10.0f, 28.0f },
-        { TEXT("Turn Rate (Yaw)"),            0.0f, 3000.0f, 25.0f, 100.0f, 900.0f },
-        { TEXT("Walkable Floor Angle"),       0.0f, 89.0f, 1.0f, 5.0f, 46.0f },
-        { TEXT("Max Step Height"),            0.0f, 150.0f, 2.0f, 10.0f, 50.0f }
+        {TEXT("[SPEED] Walk Speed"),100,3000,25,100,650}, {TEXT("[SPEED] Sprint Speed"),100,4500,25,100,2350},
+        {TEXT("[GROUND] Acceleration"),100,15000,100,500,7100}, {TEXT("[GROUND] Ground Braking"),0,18000,100,500,12000},
+        {TEXT("[GROUND] Ground Friction"),0,30,.25,1,9}, {TEXT("[AIR] Air Control"),0,1,.02,.1,1},
+        {TEXT("[AIR] Air Control Boost"),0,5,.05,.25,1.6}, {TEXT("[AIR] Falling Friction"),0,5,.05,.25,.15},
+        {TEXT("[JUMP / BHOP] Jump Velocity"),100,2000,25,100,720}, {TEXT("[AIR] Gravity Scale"),.1,8,.05,.25,2.25},
+        {TEXT("[MOMENTUM] Overall Retention"),.8,1,.001,.01,.999}, {TEXT("[MOMENTUM] Ground Retention"),.8,1,.001,.01,.998},
+        {TEXT("[MOMENTUM] Air Retention"),.8,1,.0005,.005,.9995}, {TEXT("[MOMENTUM] Landing Retention"),0,1,.01,.05,.96},
+        {TEXT("[MOMENTUM] Soft Speed Cap"),500,8000,50,250,3200}, {TEXT("[MOMENTUM] Overspeed Drag"),0,5,.05,.25,.65},
+        {TEXT("[MOMENTUM] Max Reasonable Speed"),1000,12000,100,500,5200}, {TEXT("[JUMP / BHOP] Jump Retention"),0,1,.01,.05,1},
+        {TEXT("[JUMP / BHOP] Jump Buffer"),0,.5,.01,.05,.14}, {TEXT("[JUMP / BHOP] Coyote Time"),0,.5,.01,.05,.12},
+        {TEXT("[JUMP / BHOP] Bunny Retention"),0,1,.01,.05,.98}, {TEXT("[GROUND] Turn Influence"),0,20,.25,1,7.5},
+        {TEXT("[AIR] Turn Influence"),0,20,.25,1,2.5}, {TEXT("[SPEED] Diagonal Multiplier"),.5,1.5,.01,.05,1},
+        {TEXT("[SLOPE] Acceleration"),0,4000,50,250,900}, {TEXT("[SLOPE] Downhill Multiplier"),.5,2,.01,.05,1.08},
+        {TEXT("[SLOPE] Uphill Resistance"),0,2,.025,.1,.35}, {TEXT("[WALL KICK] Up"),100,2000,25,100,1000},
+        {TEXT("[WALL KICK] Out"),100,2500,25,100,400}, {TEXT("[WALL KICK] Momentum Retention"),0,1,.025,.1,1},
+        {TEXT("[WALL KICK] Grace Time"),0,.5,.01,.05,.12}, {TEXT("[WALL KICK] Same Wall Lockout"),0,1,.01,.05,.2},
+        {TEXT("[WALL KICK] Check Distance"),0,150,2,10,28}, {TEXT("[GROUND] Turn Rate (Yaw)"),0,3000,25,100,900},
+        {TEXT("[GROUND] Walkable Angle"),0,89,1,5,46}, {TEXT("[GROUND] Max Step Height"),0,150,2,10,52}
     };
 }
 
@@ -121,32 +111,52 @@ APhase1Character::APhase1Character()
 void APhase1Character::BeginPlay()
 {
     Super::BeginPlay();
-
     ApplyMovementTuning();
-
     CameraBoom->TargetArmLength = CameraDistance;
     CameraBoom->bEnableCameraLag = bEnableCameraLag;
     CameraBoom->CameraLagSpeed = CameraLagSpeed;
     CameraBoom->bEnableCameraRotationLag = bEnableCameraRotationLag;
     CameraBoom->CameraRotationLagSpeed = CameraRotationLagSpeed;
     FollowCamera->SetFieldOfView(DefaultFOV);
-
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         PC->PlayerCameraManager->ViewPitchMin = PitchMin;
         PC->PlayerCameraManager->ViewPitchMax = PitchMax;
     }
+    bWasFalling = GetCharacterMovement()->IsFalling();
 }
 
 void APhase1Character::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement || !Controller) return;
+
+    const float Now = GetWorld()->GetTimeSeconds();
+    const bool bGrounded = Movement->IsMovingOnGround();
+    if (bWasFalling && bGrounded) HandleLanding();
+    if (bGrounded) { LastGroundedTime = Now; bWallKickState = false; }
+    else if (Movement->IsFalling()) LastAirHorizontalVelocity = FVector(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    bWasFalling = Movement->IsFalling();
 
     UpdateWallContact();
+    const FRotator Yaw(0, Controller->GetControlRotation().Yaw, 0);
+    FVector Wish = FRotationMatrix(Yaw).GetUnitAxis(EAxis::X) * ForwardInput + FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y) * RightInput;
+    const bool bDiagonal = FMath::Abs(ForwardInput) > KINDA_SMALL_NUMBER && FMath::Abs(RightInput) > KINDA_SMALL_NUMBER;
+    const float RawMagnitude = FMath::Min(Wish.Size(), 1.0f);
+    Wish = Wish.GetSafeNormal();
+    const float InputScale = RawMagnitude * (bDiagonal ? DiagonalMovementMultiplier : 1.0f);
+    if (!Wish.IsNearlyZero()) AddMovementInput(Wish, InputScale);
 
-    const bool bMovingFast = GetVelocity().SizeSquared2D() > FMath::Square(WalkSpeed * 0.75f);
-    const float TargetFOV = bSprinting && bMovingFast ? SprintFOV : DefaultFOV;
-    FollowCamera->SetFieldOfView(FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaSeconds, FOVBlendSpeed));
+    if (bGrounded) { UpdateGroundMovement(DeltaSeconds, Wish, InputScale); UpdateSlopeMovement(DeltaSeconds, Wish); }
+    else UpdateAirMovement(DeltaSeconds, Wish, InputScale);
+    UpdateMomentum(DeltaSeconds, bGrounded);
+
+    const float HorizontalSpeed = Movement->Velocity.Size2D();
+    const float InputTargetSpeed = GetNormalTargetSpeed() * (bDiagonal ? DiagonalMovementMultiplier : 1.0f);
+    Movement->MaxWalkSpeed = FMath::Max(InputTargetSpeed, HorizontalSpeed + 1.0f);
+    const bool bMovingFast = HorizontalSpeed > WalkSpeed * .75f;
+    FollowCamera->SetFieldOfView(FMath::FInterpTo(FollowCamera->FieldOfView, bSprinting && bMovingFast ? SprintFOV : DefaultFOV, DeltaSeconds, FOVBlendSpeed));
 }
 
 void APhase1Character::ConfigureInputMapping()
@@ -219,7 +229,9 @@ void APhase1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
     UEnhancedInputComponent* Input = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
     Input->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &APhase1Character::MoveForward);
+    Input->BindAction(MoveForwardAction, ETriggerEvent::Completed, this, &APhase1Character::MoveForward);
     Input->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &APhase1Character::MoveRight);
+    Input->BindAction(MoveRightAction, ETriggerEvent::Completed, this, &APhase1Character::MoveRight);
     Input->BindAction(LookYawAction, ETriggerEvent::Triggered, this, &APhase1Character::LookYaw);
     Input->BindAction(LookPitchAction, ETriggerEvent::Triggered, this, &APhase1Character::LookPitch);
     Input->BindAction(SprintAction, ETriggerEvent::Started, this, &APhase1Character::StartSprint);
@@ -267,15 +279,19 @@ float APhase1Character::GetMovementTuningValue(int32 Index) const
     case 7: return FallingLateralFriction;
     case 8: return JumpVelocity;
     case 9: return GravityScale;
-    case 10: return WallJumpUpSpeed;
-    case 11: return WallJumpOutSpeed;
-    case 12: return WallMomentumRetention;
-    case 13: return WallGraceTime;
-    case 14: return SameWallLockout;
-    case 15: return WallCheckExtraDistance;
-    case 16: return MovementRotationRate.Yaw;
-    case 17: return WalkableFloorAngle;
-    case 18: return MaxStepHeight;
+    case 10: return MomentumRetention; case 11: return GroundMomentumRetention;
+    case 12: return AirMomentumRetention; case 13: return LandingMomentumRetention;
+    case 14: return SoftSpeedCap; case 15: return OverspeedDrag;
+    case 16: return MaxReasonableSpeed; case 17: return JumpMomentumRetention;
+    case 18: return JumpBufferTime; case 19: return GroundCoyoteTime;
+    case 20: return BunnyHopRetention; case 21: return GroundTurnInfluence;
+    case 22: return AirTurnInfluence; case 23: return DiagonalMovementMultiplier;
+    case 24: return SlopeAcceleration; case 25: return DownhillMomentumMultiplier;
+    case 26: return UphillResistance; case 27: return WallJumpUpSpeed;
+    case 28: return WallJumpOutSpeed; case 29: return WallMomentumRetention;
+    case 30: return WallGraceTime; case 31: return SameWallLockout;
+    case 32: return WallCheckExtraDistance; case 33: return MovementRotationRate.Yaw;
+    case 34: return WalkableFloorAngle; case 35: return MaxStepHeight;
     default: return 0.0f;
     }
 }
@@ -301,15 +317,19 @@ void APhase1Character::SetMovementTuningValue(int32 Index, float Value)
     case 7: FallingLateralFriction = Value; break;
     case 8: JumpVelocity = Value; break;
     case 9: GravityScale = Value; break;
-    case 10: WallJumpUpSpeed = Value; break;
-    case 11: WallJumpOutSpeed = Value; break;
-    case 12: WallMomentumRetention = Value; break;
-    case 13: WallGraceTime = Value; break;
-    case 14: SameWallLockout = Value; break;
-    case 15: WallCheckExtraDistance = Value; break;
-    case 16: MovementRotationRate.Yaw = Value; break;
-    case 17: WalkableFloorAngle = Value; break;
-    case 18: MaxStepHeight = Value; break;
+    case 10: MomentumRetention = Value; break; case 11: GroundMomentumRetention = Value; break;
+    case 12: AirMomentumRetention = Value; break; case 13: LandingMomentumRetention = Value; break;
+    case 14: SoftSpeedCap = Value; break; case 15: OverspeedDrag = Value; break;
+    case 16: MaxReasonableSpeed = Value; break; case 17: JumpMomentumRetention = Value; break;
+    case 18: JumpBufferTime = Value; break; case 19: GroundCoyoteTime = Value; break;
+    case 20: BunnyHopRetention = Value; break; case 21: GroundTurnInfluence = Value; break;
+    case 22: AirTurnInfluence = Value; break; case 23: DiagonalMovementMultiplier = Value; break;
+    case 24: SlopeAcceleration = Value; break; case 25: DownhillMomentumMultiplier = Value; break;
+    case 26: UphillResistance = Value; break; case 27: WallJumpUpSpeed = Value; break;
+    case 28: WallJumpOutSpeed = Value; break; case 29: WallMomentumRetention = Value; break;
+    case 30: WallGraceTime = Value; break; case 31: SameWallLockout = Value; break;
+    case 32: WallCheckExtraDistance = Value; break; case 33: MovementRotationRate.Yaw = Value; break;
+    case 34: WalkableFloorAngle = Value; break; case 35: MaxStepHeight = Value; break;
     default: break;
     }
 }
@@ -322,7 +342,9 @@ void APhase1Character::ApplyMovementTuning()
         return;
     }
 
-    Movement->MaxWalkSpeed = bSprinting ? SprintSpeed : WalkSpeed;
+    // MaxWalkSpeed is the normal acceleration target, not an absolute cap. Keeping it
+    // above existing velocity prevents UCharacterMovement from deleting earned speed.
+    Movement->MaxWalkSpeed = FMath::Max(bSprinting ? SprintSpeed : WalkSpeed, Movement->Velocity.Size2D() + 1.0f);
     Movement->MaxAcceleration = MaxAcceleration;
     Movement->BrakingDecelerationWalking = GroundBrakingDeceleration;
     Movement->GroundFriction = GroundFriction;
@@ -426,186 +448,196 @@ void APhase1Character::ResetAllMovementTuning()
     ApplyMovementTuning();
 }
 
-void APhase1Character::MoveForward(const FInputActionValue& Value)
-{
-    if (!Controller) return;
-    const FRotator YawRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
-    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X), Value.Get<float>());
-}
-
-void APhase1Character::MoveRight(const FInputActionValue& Value)
-{
-    if (!Controller) return;
-    const FRotator YawRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
-    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), Value.Get<float>());
-}
-
-void APhase1Character::LookYaw(const FInputActionValue& Value)
-{
-    AddControllerYawInput(Value.Get<float>() * MouseSensitivity);
-}
-
-void APhase1Character::LookPitch(const FInputActionValue& Value)
-{
-    AddControllerPitchInput(Value.Get<float>() * MouseSensitivity);
-}
-
-void APhase1Character::StartSprint()
-{
-    bSprinting = true;
-    ApplyMovementTuning();
-}
-
-void APhase1Character::StopSprint()
-{
-    bSprinting = false;
-    ApplyMovementTuning();
-}
+void APhase1Character::MoveForward(const FInputActionValue& Value) { ForwardInput = Value.Get<float>(); }
+void APhase1Character::MoveRight(const FInputActionValue& Value) { RightInput = Value.Get<float>(); }
+void APhase1Character::LookYaw(const FInputActionValue& Value) { AddControllerYawInput(Value.Get<float>() * MouseSensitivity); }
+void APhase1Character::LookPitch(const FInputActionValue& Value) { AddControllerPitchInput(Value.Get<float>() * MouseSensitivity); }
+void APhase1Character::StartSprint() { bSprinting = true; ApplyMovementTuning(); }
+void APhase1Character::StopSprint() { bSprinting = false; ApplyMovementTuning(); }
 
 void APhase1Character::HandleJumpStarted()
 {
-    if (!TryWallKick())
-    {
-        Jump();
-    }
+    JumpPressedTime = GetWorld()->GetTimeSeconds();
+    if (TryWallKick()) return;
+    const UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (Movement->IsMovingOnGround() || JumpPressedTime - LastGroundedTime <= GroundCoyoteTime)
+        PerformJump(false);
 }
 
-void APhase1Character::HandleJumpCompleted()
+void APhase1Character::HandleJumpCompleted() { StopJumping(); }
+
+bool APhase1Character::PerformJump(bool bBunnyHop)
 {
-    StopJumping();
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement) return false;
+    FVector Horizontal(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    Horizontal *= bBunnyHop ? BunnyHopRetention : JumpMomentumRetention;
+    Movement->Velocity = FVector(Horizontal.X, Horizontal.Y, JumpVelocity);
+    Movement->SetMovementMode(MOVE_Falling);
+    JumpPressedTime = -1000.0f;
+    RecordMovementEvent(bBunnyHop ? TEXT("Bunny Hop") : TEXT("Jump"));
+    return true;
+}
+
+void APhase1Character::HandleLanding()
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement) return;
+    const float Retention = LandingMomentumRetention;
+    FVector LandingHorizontal = LastAirHorizontalVelocity * Retention;
+    if (LandingHorizontal.Size2D() > Movement->Velocity.Size2D())
+    {
+        Movement->Velocity.X = LandingHorizontal.X;
+        Movement->Velocity.Y = LandingHorizontal.Y;
+    }
+    if (GetWorld()->GetTimeSeconds() - JumpPressedTime <= JumpBufferTime) PerformJump(true);
+}
+
+void APhase1Character::UpdateGroundMovement(float DeltaSeconds, const FVector& WishDirection, float /*InputScale*/)
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement || WishDirection.IsNearlyZero()) return;
+    FVector Horizontal(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    const float Speed = Horizontal.Size();
+    if (Speed < 1.0f) return;
+    const FVector Steered = FMath::Lerp(Horizontal.GetSafeNormal(), WishDirection, FMath::Clamp(GroundTurnInfluence * DeltaSeconds, 0.0f, 1.0f)).GetSafeNormal();
+    Movement->Velocity.X = Steered.X * Speed;
+    Movement->Velocity.Y = Steered.Y * Speed;
+}
+
+void APhase1Character::UpdateAirMovement(float DeltaSeconds, const FVector& WishDirection, float /*InputScale*/)
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement || WishDirection.IsNearlyZero()) return;
+    FVector Horizontal(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    const float Speed = Horizontal.Size();
+    if (Speed < 1.0f) return;
+    const FVector Steered = FMath::Lerp(Horizontal.GetSafeNormal(), WishDirection, FMath::Clamp(AirTurnInfluence * DeltaSeconds, 0.0f, 1.0f)).GetSafeNormal();
+    Movement->Velocity.X = Steered.X * Speed;
+    Movement->Velocity.Y = Steered.Y * Speed;
+}
+
+void APhase1Character::UpdateMomentum(float DeltaSeconds, bool bGrounded)
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    FVector Horizontal(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    float Speed = Horizontal.Size();
+    const float Target = GetNormalTargetSpeed();
+    if (Speed <= Target) return;
+
+    const float FrameRetention = MomentumRetention * (bGrounded ? GroundMomentumRetention : AirMomentumRetention);
+    Speed *= FMath::Pow(FMath::Clamp(FrameRetention, 0.0f, 1.0f), DeltaSeconds * 60.0f);
+    if (Speed > SoftSpeedCap)
+    {
+        const float ExcessRatio = (Speed - SoftSpeedCap) / FMath::Max(SoftSpeedCap, 1.0f);
+        Speed *= FMath::Exp(-OverspeedDrag * ExcessRatio * DeltaSeconds);
+    }
+    Speed = FMath::Min(Speed, MaxReasonableSpeed);
+    const FVector Adjusted = Horizontal.GetSafeNormal() * Speed;
+    Movement->Velocity.X = Adjusted.X; Movement->Velocity.Y = Adjusted.Y;
+}
+
+void APhase1Character::UpdateSlopeMovement(float DeltaSeconds, const FVector& WishDirection)
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement || !Movement->CurrentFloor.IsWalkableFloor()) return;
+    const FVector Normal = Movement->CurrentFloor.HitResult.ImpactNormal;
+    if (Normal.Z > .995f) return;
+    FVector Downhill = FVector::VectorPlaneProject(FVector(0, 0, -1), Normal).GetSafeNormal();
+    FVector HorizontalDownhill(Downhill.X, Downhill.Y, 0); HorizontalDownhill.Normalize();
+    const float Alignment = FVector::DotProduct(Movement->Velocity.GetSafeNormal2D(), HorizontalDownhill);
+    if (Alignment > .05f)
+    {
+        Movement->Velocity += HorizontalDownhill * SlopeAcceleration * Alignment * DeltaSeconds;
+        Movement->Velocity.X *= FMath::Pow(DownhillMomentumMultiplier, DeltaSeconds);
+        Movement->Velocity.Y *= FMath::Pow(DownhillMomentumMultiplier, DeltaSeconds);
+        RecordMovementEvent(TEXT("Slope Boost"));
+    }
+    else if (Alignment < -.05f)
+    {
+        const float Scale = FMath::Max(0.0f, 1.0f - UphillResistance * -Alignment * DeltaSeconds);
+        Movement->Velocity.X *= Scale; Movement->Velocity.Y *= Scale;
+    }
 }
 
 void APhase1Character::UpdateWallContact()
 {
     UCharacterMovementComponent* Movement = GetCharacterMovement();
-    if (!Movement || !Movement->IsFalling())
-    {
-        return;
-    }
-
+    if (!Movement || !Movement->IsFalling()) return;
     FHitResult WallHit;
     if (FindNearbyWall(WallHit))
     {
-        FVector HorizontalNormal(WallHit.ImpactNormal.X, WallHit.ImpactNormal.Y, 0.0f);
-        if (HorizontalNormal.Normalize())
-        {
-            LastWallNormal = HorizontalNormal;
-            LastWallContactTime = GetWorld()->GetTimeSeconds();
-        }
+        FVector Normal(WallHit.ImpactNormal.X, WallHit.ImpactNormal.Y, 0);
+        if (Normal.Normalize()) { LastWallNormal = Normal; LastWallContactTime = GetWorld()->GetTimeSeconds(); }
     }
 }
 
 bool APhase1Character::FindNearbyWall(FHitResult& OutHit) const
 {
-    const UWorld* World = GetWorld();
-    const UCapsuleComponent* Capsule = GetCapsuleComponent();
-    if (!World || !Capsule)
-    {
-        return false;
-    }
-
+    const UWorld* World = GetWorld(); const UCapsuleComponent* Capsule = GetCapsuleComponent();
+    if (!World || !Capsule) return false;
     const FVector Start = GetActorLocation();
-    const float TraceDistance = Capsule->GetScaledCapsuleRadius() + WallCheckExtraDistance;
-
-    static const FVector Directions[] =
-    {
-        FVector(1.0f, 0.0f, 0.0f),
-        FVector(-1.0f, 0.0f, 0.0f),
-        FVector(0.0f, 1.0f, 0.0f),
-        FVector(0.0f, -1.0f, 0.0f),
-        FVector(1.0f, 1.0f, 0.0f).GetSafeNormal(),
-        FVector(1.0f, -1.0f, 0.0f).GetSafeNormal(),
-        FVector(-1.0f, 1.0f, 0.0f).GetSafeNormal(),
-        FVector(-1.0f, -1.0f, 0.0f).GetSafeNormal()
-    };
-
-    FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(WallKickTrace), false, this);
-    bool bFoundWall = false;
-    float BestDistance = TNumericLimits<float>::Max();
-
+    const float Distance = Capsule->GetScaledCapsuleRadius() + WallCheckExtraDistance;
+    static const FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0), FVector(1,1,0).GetSafeNormal(), FVector(1,-1,0).GetSafeNormal(), FVector(-1,1,0).GetSafeNormal(), FVector(-1,-1,0).GetSafeNormal() };
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(WallKickTrace), false, this);
+    float Best = TNumericLimits<float>::Max(); bool bFound = false;
     for (const FVector& Direction : Directions)
     {
         FHitResult Hit;
-        const FVector End = Start + Direction * TraceDistance;
-        if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QueryParams))
-        {
-            continue;
-        }
-
-        if (GetCharacterMovement()->IsWalkable(Hit))
-        {
-            continue;
-        }
-
-        if (FMath::Abs(Hit.ImpactNormal.Z) > 0.35f)
-        {
-            continue;
-        }
-
-        if (Hit.Distance < BestDistance)
-        {
-            BestDistance = Hit.Distance;
-            OutHit = Hit;
-            bFoundWall = true;
-        }
+        if (!World->LineTraceSingleByChannel(Hit, Start, Start + Direction * Distance, ECC_Visibility, Params)) continue;
+        if (GetCharacterMovement()->IsWalkable(Hit) || FMath::Abs(Hit.ImpactNormal.Z) > .35f) continue;
+        if (Hit.Distance < Best) { Best = Hit.Distance; OutHit = Hit; bFound = true; }
     }
-
-    return bFoundWall;
+    return bFound;
 }
 
 bool APhase1Character::TryWallKick()
 {
-    UCharacterMovementComponent* Movement = GetCharacterMovement();
-    UWorld* World = GetWorld();
-    if (!Movement || !World || !Movement->IsFalling())
+    UCharacterMovementComponent* Movement = GetCharacterMovement(); UWorld* World = GetWorld();
+    if (!Movement || !World || !Movement->IsFalling()) return false;
+    FHitResult Hit;
+    if (FindNearbyWall(Hit))
     {
-        return false;
+        FVector Normal(Hit.ImpactNormal.X, Hit.ImpactNormal.Y, 0);
+        if (Normal.Normalize()) { LastWallNormal = Normal; LastWallContactTime = World->GetTimeSeconds(); }
     }
-
-    FHitResult WallHit;
-    if (FindNearbyWall(WallHit))
-    {
-        FVector HorizontalNormal(WallHit.ImpactNormal.X, WallHit.ImpactNormal.Y, 0.0f);
-        if (HorizontalNormal.Normalize())
-        {
-            LastWallNormal = HorizontalNormal;
-            LastWallContactTime = World->GetTimeSeconds();
-        }
-    }
-
     const float Now = World->GetTimeSeconds();
-    if ((Now - LastWallContactTime) > WallGraceTime || LastWallNormal.IsNearlyZero())
-    {
-        return false;
-    }
-
-    const bool bSameWall =
-        !LastWallJumpNormal.IsNearlyZero() &&
-        FVector::DotProduct(LastWallNormal, LastWallJumpNormal) > 0.85f;
-
-    if (bSameWall && (Now - LastWallJumpTime) < SameWallLockout)
-    {
-        return false;
-    }
-
-    const FVector CurrentVelocity = GetVelocity();
-    const FVector HorizontalVelocity(CurrentVelocity.X, CurrentVelocity.Y, 0.0f);
-
-    const FVector AlongWallVelocity =
-        HorizontalVelocity - LastWallNormal * FVector::DotProduct(HorizontalVelocity, LastWallNormal);
-
-    const FVector NewHorizontalVelocity =
-        AlongWallVelocity * WallMomentumRetention +
-        LastWallNormal * WallJumpOutSpeed;
-
-    LaunchCharacter(
-        FVector(NewHorizontalVelocity.X, NewHorizontalVelocity.Y, WallJumpUpSpeed),
-        true,
-        true);
-
-    LastWallJumpNormal = LastWallNormal;
-    LastWallJumpTime = Now;
-    LastWallContactTime = -1000.0f;
-
+    if (Now - LastWallContactTime > WallGraceTime || LastWallNormal.IsNearlyZero()) return false;
+    const bool bSameWall = !LastWallJumpNormal.IsNearlyZero() && FVector::DotProduct(LastWallNormal, LastWallJumpNormal) > .85f;
+    if (bSameWall && Now - LastWallJumpTime < SameWallLockout) return false;
+    FVector Horizontal(Movement->Velocity.X, Movement->Velocity.Y, 0);
+    const float IntoWall = FVector::DotProduct(Horizontal, -LastWallNormal);
+    if (IntoWall > 0) Horizontal += LastWallNormal * IntoWall;
+    const FVector Tangential = Horizontal - LastWallNormal * FVector::DotProduct(Horizontal, LastWallNormal);
+    const FVector NewHorizontal = Tangential * WallMomentumRetention + LastWallNormal * WallJumpOutSpeed;
+    LaunchCharacter(FVector(NewHorizontal.X, NewHorizontal.Y, WallJumpUpSpeed), true, true);
+    LastWallJumpNormal = LastWallNormal; LastWallJumpTime = Now; LastWallContactTime = -1000;
+    bWallKickState = true; JumpPressedTime = -1000; RecordMovementEvent(TEXT("Wall Kick"));
     return true;
+}
+
+void APhase1Character::RecordMovementEvent(const TCHAR* EventName)
+{
+    RecentMovementEvent = EventName; RecentEventTime = GetWorld()->GetTimeSeconds();
+}
+
+FString APhase1Character::GetMovementStateText() const
+{
+    if (bWallKickState && GetWorld()->GetTimeSeconds() - LastWallJumpTime < .35f) return TEXT("Wall Kick");
+    return GetCharacterMovement()->IsMovingOnGround() ? TEXT("Grounded") : TEXT("Falling");
+}
+
+FString APhase1Character::GetRecentMovementEvent() const
+{
+    return GetWorld()->GetTimeSeconds() - RecentEventTime <= .75f ? RecentMovementEvent : FString();
+}
+
+bool APhase1Character::HasWallContact() const
+{
+    return GetWorld()->GetTimeSeconds() - LastWallContactTime <= WallGraceTime;
+}
+
+float APhase1Character::GetOverspeed() const
+{
+    return FMath::Max(0.0f, GetVelocity().Size2D() - GetNormalTargetSpeed());
 }
