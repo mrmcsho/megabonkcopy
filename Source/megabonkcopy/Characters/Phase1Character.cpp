@@ -2,9 +2,11 @@
 
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -120,6 +122,9 @@ void APhase1Character::BeginPlay()
 void APhase1Character::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+    UpdateWallContact();
+
     const bool bMovingFast = GetVelocity().SizeSquared2D() > FMath::Square(WalkSpeed * 0.75f);
     const float TargetFOV = bSprinting && bMovingFast ? SprintFOV : DefaultFOV;
     FollowCamera->SetFieldOfView(FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaSeconds, FOVBlendSpeed));
@@ -170,8 +175,8 @@ void APhase1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
     Input->BindAction(LookPitchAction, ETriggerEvent::Triggered, this, &APhase1Character::LookPitch);
     Input->BindAction(SprintAction, ETriggerEvent::Started, this, &APhase1Character::StartSprint);
     Input->BindAction(SprintAction, ETriggerEvent::Completed, this, &APhase1Character::StopSprint);
-    Input->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-    Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+    Input->BindAction(JumpAction, ETriggerEvent::Started, this, &APhase1Character::HandleJumpStarted);
+    Input->BindAction(JumpAction, ETriggerEvent::Completed, this, &APhase1Character::HandleJumpCompleted);
 }
 
 void APhase1Character::MoveForward(const FInputActionValue& Value)
@@ -188,7 +193,177 @@ void APhase1Character::MoveRight(const FInputActionValue& Value)
     AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), Value.Get<float>());
 }
 
-void APhase1Character::LookYaw(const FInputActionValue& Value) { AddControllerYawInput(Value.Get<float>() * MouseSensitivity); }
-void APhase1Character::LookPitch(const FInputActionValue& Value) { AddControllerPitchInput(Value.Get<float>() * MouseSensitivity); }
-void APhase1Character::StartSprint() { bSprinting = true; GetCharacterMovement()->MaxWalkSpeed = SprintSpeed; }
-void APhase1Character::StopSprint() { bSprinting = false; GetCharacterMovement()->MaxWalkSpeed = WalkSpeed; }
+void APhase1Character::LookYaw(const FInputActionValue& Value)
+{
+    AddControllerYawInput(Value.Get<float>() * MouseSensitivity);
+}
+
+void APhase1Character::LookPitch(const FInputActionValue& Value)
+{
+    AddControllerPitchInput(Value.Get<float>() * MouseSensitivity);
+}
+
+void APhase1Character::StartSprint()
+{
+    bSprinting = true;
+    GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void APhase1Character::StopSprint()
+{
+    bSprinting = false;
+    GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void APhase1Character::HandleJumpStarted()
+{
+    if (!TryWallKick())
+    {
+        Jump();
+    }
+}
+
+void APhase1Character::HandleJumpCompleted()
+{
+    StopJumping();
+}
+
+void APhase1Character::UpdateWallContact()
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    if (!Movement || !Movement->IsFalling())
+    {
+        return;
+    }
+
+    FHitResult WallHit;
+    if (FindNearbyWall(WallHit))
+    {
+        FVector HorizontalNormal(WallHit.ImpactNormal.X, WallHit.ImpactNormal.Y, 0.0f);
+        if (HorizontalNormal.Normalize())
+        {
+            LastWallNormal = HorizontalNormal;
+            LastWallContactTime = GetWorld()->GetTimeSeconds();
+        }
+    }
+}
+
+bool APhase1Character::FindNearbyWall(FHitResult& OutHit) const
+{
+    const UWorld* World = GetWorld();
+    const UCapsuleComponent* Capsule = GetCapsuleComponent();
+    if (!World || !Capsule)
+    {
+        return false;
+    }
+
+    const FVector Start = GetActorLocation();
+    const float TraceDistance = Capsule->GetScaledCapsuleRadius() + WallCheckExtraDistance;
+
+    static const FVector Directions[] =
+    {
+        FVector(1.0f, 0.0f, 0.0f),
+        FVector(-1.0f, 0.0f, 0.0f),
+        FVector(0.0f, 1.0f, 0.0f),
+        FVector(0.0f, -1.0f, 0.0f),
+        FVector(1.0f, 1.0f, 0.0f).GetSafeNormal(),
+        FVector(1.0f, -1.0f, 0.0f).GetSafeNormal(),
+        FVector(-1.0f, 1.0f, 0.0f).GetSafeNormal(),
+        FVector(-1.0f, -1.0f, 0.0f).GetSafeNormal()
+    };
+
+    FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(WallKickTrace), false, this);
+    bool bFoundWall = false;
+    float BestDistance = TNumericLimits<float>::Max();
+
+    for (const FVector& Direction : Directions)
+    {
+        FHitResult Hit;
+        const FVector End = Start + Direction * TraceDistance;
+        if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, QueryParams))
+        {
+            continue;
+        }
+
+        // Walkable surfaces are floors/slopes, not wall-kick surfaces.
+        if (GetCharacterMovement()->IsWalkable(Hit))
+        {
+            continue;
+        }
+
+        // Keep the wall normal mostly horizontal so ceilings and sharp ground edges do not count.
+        if (FMath::Abs(Hit.ImpactNormal.Z) > 0.35f)
+        {
+            continue;
+        }
+
+        if (Hit.Distance < BestDistance)
+        {
+            BestDistance = Hit.Distance;
+            OutHit = Hit;
+            bFoundWall = true;
+        }
+    }
+
+    return bFoundWall;
+}
+
+bool APhase1Character::TryWallKick()
+{
+    UCharacterMovementComponent* Movement = GetCharacterMovement();
+    UWorld* World = GetWorld();
+    if (!Movement || !World || !Movement->IsFalling())
+    {
+        return false;
+    }
+
+    // Refresh contact immediately on button press so the kick still feels responsive at high speed.
+    FHitResult WallHit;
+    if (FindNearbyWall(WallHit))
+    {
+        FVector HorizontalNormal(WallHit.ImpactNormal.X, WallHit.ImpactNormal.Y, 0.0f);
+        if (HorizontalNormal.Normalize())
+        {
+            LastWallNormal = HorizontalNormal;
+            LastWallContactTime = World->GetTimeSeconds();
+        }
+    }
+
+    const float Now = World->GetTimeSeconds();
+    if ((Now - LastWallContactTime) > WallGraceTime || LastWallNormal.IsNearlyZero())
+    {
+        return false;
+    }
+
+    const bool bSameWall =
+        !LastWallJumpNormal.IsNearlyZero() &&
+        FVector::DotProduct(LastWallNormal, LastWallJumpNormal) > 0.85f;
+
+    if (bSameWall && (Now - LastWallJumpTime) < SameWallLockout)
+    {
+        return false;
+    }
+
+    const FVector CurrentVelocity = GetVelocity();
+    const FVector HorizontalVelocity(CurrentVelocity.X, CurrentVelocity.Y, 0.0f);
+
+    // Mega Man-style kick: a clear fixed push away from the wall plus a fixed upward launch.
+    // Only tangential momentum is retained, so the result stays predictable instead of behaving like a physics reflection.
+    const FVector AlongWallVelocity =
+        HorizontalVelocity - LastWallNormal * FVector::DotProduct(HorizontalVelocity, LastWallNormal);
+
+    const FVector NewHorizontalVelocity =
+        AlongWallVelocity * WallMomentumRetention +
+        LastWallNormal * WallJumpOutSpeed;
+
+    LaunchCharacter(
+        FVector(NewHorizontalVelocity.X, NewHorizontalVelocity.Y, WallJumpUpSpeed),
+        true,
+        true);
+
+    LastWallJumpNormal = LastWallNormal;
+    LastWallJumpTime = Now;
+    LastWallContactTime = -1000.0f;
+
+    return true;
+}
