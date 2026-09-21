@@ -1,19 +1,28 @@
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
+# Unreal Engine generated content
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
 .vs/
-.idea/
-*.csproj
-*.sln
-*.user
-*.pidb
-*.booproj
-*.svd
-*.pdb
-*.mdb
-sysinfo.txt
 
+# IDE and generated project files
+.idea/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.code-workspace
+
+# Build products and local caches
+Build/
+Builds/
+*.log
+*.pdb
+*.obj
+*.user
+
+# OS metadata
+.DS_Store
+Thumbs.db
