@@ -18,11 +18,20 @@ Until the map is saved, `/Engine/Maps/Entry` is used as a safe source-controlled
 - **Mouse:** camera yaw and pitch
 - **Left Shift:** sprint
 - **Space:** jump
+- **F1:** toggle the live movement tuning/debug panel
+- **Arrow keys / Page Up / Page Down:** select and fine/coarse-adjust a tuning value
+- **R / F2:** reset the selected value / all values for the current Play session
 
 Movement and camera feel values are exposed as `EditDefaultsOnly` properties on `APhase1Character`. Input mappings are created with Enhanced Input in C++, keeping this clean migration free of generated binary assets.
 
 ## Prototype scope
 
 `APrototypeArena` constructs the disposable greybox from Unreal's built-in cube mesh. `APhase1Character` uses `UCharacterMovementComponent`, a spring arm, and a camera. `APrototypeGameMode` selects the character, gives it a reliable elevated spawn, and creates the arena.
+
+The character layers directional steering, retained jump/landing momentum, buffered bunny hops,
+coyote time, downhill acceleration, soft overspeed drag, and predictable tangential wall kicks
+over `UCharacterMovementComponent`. Sprint speed is a normal running target rather than a hard
+cap. The F1 panel exposes all movement-feel values in two categorized columns and resets to the
+source defaults whenever Play restarts.
 
 Unreal Engine 5.8 and Unreal MCP were not present in the migration environment. Compilation and Play In Editor validation must therefore be completed locally in Unreal Engine 5.8 after saving `PrototypeArena`.

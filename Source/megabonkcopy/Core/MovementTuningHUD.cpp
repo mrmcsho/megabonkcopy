@@ -38,7 +38,8 @@ void AMovementTuningHUD::DrawHUD()
         return;
     }
 
-    const float HorizontalSpeed = Character->GetVelocity().Size2D();
+    const FVector Velocity = Character->GetVelocity();
+    const float HorizontalSpeed = Velocity.Size2D();
     DrawText(
         FString::Printf(TEXT("Speed: %.0f cm/s  (%.2f m/s)"), HorizontalSpeed, HorizontalSpeed / 100.0f),
         FLinearColor::White,
@@ -62,14 +63,26 @@ void AMovementTuningHUD::DrawHUD()
         return;
     }
 
+    DrawText(
+        FString::Printf(TEXT("Horizontal: %.0f | Vertical: %.0f | State: %s"), HorizontalSpeed, Velocity.Z, *Character->GetMovementStateText()),
+        FLinearColor(0.75f, 0.9f, 1.0f), 560.0f, 20.0f, Font, 1.0f, false);
+    DrawText(
+        FString::Printf(TEXT("Target: %.0f | Momentum / Overspeed: +%.0f%s"), Character->GetNormalTargetSpeed(), Character->GetOverspeed(), Character->HasWallContact() ? TEXT(" | WALL CONTACT") : TEXT("")),
+        Character->HasWallContact() ? FLinearColor(1.0f, 0.75f, 0.2f) : FLinearColor::White,
+        560.0f, 42.0f, Font, 1.0f, false);
+    const FString Event = Character->GetRecentMovementEvent();
+    if (!Event.IsEmpty())
+        DrawText(FString::Printf(TEXT("EVENT: %s"), *Event), FLinearColor(0.3f, 1.0f, 0.45f), 560.0f, 64.0f, Font, 1.05f, false);
+
     const int32 Count = Character->GetMovementTuningCount();
     const int32 Selected = Character->GetMovementTuningSelection();
 
     const float PanelX = 18.0f;
     const float PanelY = 70.0f;
-    const float PanelWidth = 520.0f;
+    const float PanelWidth = 1040.0f;
     const float RowHeight = 21.0f;
-    const float PanelHeight = 86.0f + Count * RowHeight;
+    const int32 RowsPerColumn = FMath::DivideAndRoundUp(Count, 2);
+    const float PanelHeight = 86.0f + RowsPerColumn * RowHeight;
 
     DrawRect(
         FLinearColor(0.02f, 0.02f, 0.025f, 0.88f),
@@ -119,10 +132,12 @@ void AMovementTuningHUD::DrawHUD()
             *Character->GetMovementTuningName(Index),
             *FormatTuningValue(Character->GetMovementTuningValue(Index)));
 
+        const int32 Column = Index / RowsPerColumn;
+        if (Index % RowsPerColumn == 0) Y = PanelY + 76.0f;
         DrawText(
             Line,
             Color,
-            PanelX + 12.0f,
+            PanelX + 12.0f + Column * 510.0f,
             Y,
             Font,
             0.96f,
